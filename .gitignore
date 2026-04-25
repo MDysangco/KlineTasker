@@ -1,0 +1,41 @@
+#########################
+# Visual Studio
+#########################
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.ide.*
+*.db
+*.db-shm
+*.db-wal
+DocumentLayout.json
+DocumentLayout.backup.json
+
+#########################
+# Build output
+#########################
+bin/
+obj/
+*.dll
+*.exe
+*.pdb
+*.cache
+*.log
+
+#########################
+# NuGet
+#########################
+packages/
+*.nupkg
+*.snupkg
+
+#########################
+# OS junk
+#########################
+Thumbs.db
+Desktop.ini
+.DS_Store
+*~
+TrenchLooter/appsettings.json
