@@ -15,7 +15,7 @@ namespace TrenchLooter.CronTasks
             {
                 List<Coin> coins = StoredProcedures.GetActiveCoins();
                 List<Coin> noDateCoinsList = coins.Where(coin => !coin.BinanceListingDate.HasValue).ToList();
-                
+  
                 if(noDateCoinsList.Any())
                 {
                     BinanceClient client = new BinanceClient();

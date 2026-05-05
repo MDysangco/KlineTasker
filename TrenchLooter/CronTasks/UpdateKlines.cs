@@ -23,14 +23,15 @@ namespace TrenchLooter.CronTasks
                 if (await client.CheckConnection())
                 {
                     List<Coin> coinList = StoredProcedures.GetActiveCoins();
-                    List<Kline.APITickerKline> klines = new List<Kline.APITickerKline>();
 
                     foreach (Coin coin in coinList)
                     {
+
                         try
                         {
                             Kline.TickerKline kline = await StoredProcedures.GetLatestRecordedKline(coin, Kline.KlineInterval.OneHour);
-                            
+                            List<Kline.APITickerKline> klines = new List<Kline.APITickerKline>();
+
                             if (kline == null || string.IsNullOrEmpty(kline?.KlineOpenTime))
                             {
                                 klines.AddRange(await client.GetKlines(coin, Kline.KlineInterval.OneHour, 1000));
@@ -52,6 +53,11 @@ namespace TrenchLooter.CronTasks
                                 klines.AddRange(await client.GetKlines(coin, Kline.KlineInterval.OneHour, 1000, null, startDate));
                             }
 
+                            if (klines.Any())
+                            { 
+                                await StoredProcedures.Insertklines(klines);
+                            }
+
                         }
                         catch (Exception ex)
                         {
@@ -59,8 +65,8 @@ namespace TrenchLooter.CronTasks
                         }
                     }
 
-                    bool inserted = await StoredProcedures.Insertklines(klines);
-                    return inserted;
+                    return true;
+
                 }
 
                 return false;
