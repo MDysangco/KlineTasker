@@ -1,8 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using Microsoft.Extensions.Configuration;
+using Zyprix.Data.Interfaces;
+using Zyprix.Data.Repositories;
+using Zyprix.Services;
+using Zyprix.Services.Interfaces;
 
 namespace TrenchLooter.CronTasks
 {
@@ -17,10 +17,12 @@ namespace TrenchLooter.CronTasks
         {
             try
             {
+                ZypryxClient zypryxClient = new ZypryxClient();
+
                 long startDate = new DateTimeOffset(DateTime.UtcNow).ToUnixTimeMilliseconds();
                 long endDate = new DateTimeOffset(DateTime.UtcNow.AddYears(-7).AddDays(-2)).ToUnixTimeMilliseconds();
 
-                int rowsDeleted = await StoredProcedures.DeleteKlinesByDateRange(startDate, endDate);
+                int rowsDeleted = await zypryxClient.DeleteKlinesByDateRange(startDate, endDate);
 
                 return rowsDeleted > 0;
             }
