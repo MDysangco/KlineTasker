@@ -1,9 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using TrenchLooter.Models;
+﻿using Microsoft.Extensions.Configuration;
+using Zyprix.Data.Interfaces;
+using Zyprix.Data.Repositories;
+using Zyprix.Models;
+using Zyprix.Services;
+using Zyprix.Services.Interfaces;
 
 namespace TrenchLooter.CronTasks
 {
@@ -13,32 +13,52 @@ namespace TrenchLooter.CronTasks
         {
             try
             {
-                List<Coin> coins = StoredProcedures.GetActiveCoins();
-                List<Coin> noDateCoinsList = coins.Where(coin => !coin.BinanceListingDate.HasValue).ToList();
-  
-                if(noDateCoinsList.Any())
+                BinanceClient binanceClient = new BinanceClient();
+                ZypryxClient zypryxClient = new ZypryxClient();
+
+                List<Coin>? coins = await zypryxClient.GetActiveCoins();
+                if (coins == null || !coins.Any())
                 {
-                    BinanceClient client = new BinanceClient();
+                    Console.WriteLine("No active coins found in Zypryx.");
+                    return false;
+                }
 
-                    if (await client.CheckConnection())
+                coins = coins.Where(coin => !coin.BinanceListingDate.HasValue).ToList();
+                if (coins == null || !coins.Any())
+                {
+                    Console.WriteLine("No coins without Binance listing date found.");
+                    return false;
+                }
+
+                if(!await binanceClient.CheckConnection())
+                {
+                    Console.WriteLine("Unable to connect to Binance.");
+                    return false;
+                }
+
+                foreach (Coin coin in coins)
+                {
+                    DateTime startingEpoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+
+                    List<Kline> klines = await binanceClient.GetKlines(coin, KlineInterval.OneHour, 1, null, startingEpoch);
+
+                    if (klines.Any())
                     {
-                        foreach (Coin coin in noDateCoinsList) {
+                        Kline kline = klines.First();
 
-                            DateTime startingEpoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+                        if (long.TryParse(kline.KlineOpenTime, out long klineOpenTime))
+                        {
 
-                            List<Kline.APITickerKline> klines = await client.GetKlines(coin, Kline.KlineInterval.OneHour, 1, null, startingEpoch);
+                            coin.BinanceListingDate = klineOpenTime;
+                            coin.Active = true;
 
-                            if (klines.Any())
+                            bool updated = await zypryxClient.UpdateCoin(coin);
+                            if (updated)
                             {
-                                Kline.APITickerKline kline = klines.First();
-                                bool updated = await StoredProcedures.UpdateCoins(coin, true, kline.klineOpenTime.Value);
-
-                                if (!updated)
-                                {
-                                    return false;
-                                }
+                                return true;
                             }
                         }
+                        return false;
                     }
                 }
 

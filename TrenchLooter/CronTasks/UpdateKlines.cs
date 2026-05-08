@@ -1,9 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using TrenchLooter.Models;
+﻿using Microsoft.Extensions.Configuration;
+using Zyprix.Data.Interfaces;
+using Zyprix.Data.Repositories;
+using Zyprix.Models;
+using Zyprix.Services;
+using Zyprix.Services.Interfaces;
 
 namespace TrenchLooter.CronTasks
 {
@@ -18,58 +18,63 @@ namespace TrenchLooter.CronTasks
          {
             try
             {
-                BinanceClient client = new BinanceClient();
+                BinanceClient binanceClient = new BinanceClient();
+                ZypryxClient zypryxClient = new ZypryxClient();
 
-                if (await client.CheckConnection())
+                List<Coin>? coins = await zypryxClient.GetActiveCoins();
+                if (coins == null || !coins.Any())
                 {
-                    List<Coin> coinList = StoredProcedures.GetActiveCoins();
-
-                    foreach (Coin coin in coinList)
-                    {
-
-                        try
-                        {
-                            Kline.TickerKline kline = await StoredProcedures.GetLatestRecordedKline(coin, Kline.KlineInterval.OneHour);
-                            List<Kline.APITickerKline> klines = new List<Kline.APITickerKline>();
-
-                            if (kline == null || string.IsNullOrEmpty(kline?.KlineOpenTime))
-                            {
-                                klines.AddRange(await client.GetKlines(coin, Kline.KlineInterval.OneHour, 1000));
-                            } 
-                            else
-                            {
-
-                                DateTime dt = DateTime.UtcNow;
-                                DateTime roundedDown = new DateTime(dt.Year, dt.Month, dt.Day, dt.Hour, 0, 0);
-
-                                long startDateLong = long.Parse(kline.KlineOpenTime);
-                                DateTime startDate = DateTimeOffset.FromUnixTimeMilliseconds(startDateLong).UtcDateTime;
-
-                                if (roundedDown == startDate)
-                                {
-                                    continue;
-                                }
-
-                                klines.AddRange(await client.GetKlines(coin, Kline.KlineInterval.OneHour, 1000, null, startDate));
-                            }
-
-                            if (klines.Any())
-                            { 
-                                await StoredProcedures.Insertklines(klines);
-                            }
-
-                        }
-                        catch (Exception ex)
-                        {
-                            Console.WriteLine($"Unable to fetch klines for {coin.Ticker}: {ex.ToString()}");
-                        }
-                    }
-
-                    return true;
-
+                    Console.WriteLine("No active coins found in Zypryx.");
+                    return false;
                 }
 
-                return false;
+                if (!await binanceClient.CheckConnection())
+                {
+                    Console.WriteLine("Unable to connect to Binance.");
+                    return false;
+                }
+
+                foreach (Coin coin in coins)
+                {
+                    try
+                    {
+                        Kline kline = await zypryxClient.GetLatestKline(coin.Id, KlineInterval.OneHour);
+                        List<Kline> klines = new List<Kline>();
+
+                        if (kline == null || string.IsNullOrEmpty(kline?.KlineOpenTime))
+                        {
+                            klines.AddRange(await binanceClient.GetKlines(coin, KlineInterval.OneHour, 1000));
+                        }
+                        else
+                        {
+
+                            DateTime dt = DateTime.UtcNow;
+                            DateTime roundedDown = new DateTime(dt.Year, dt.Month, dt.Day, dt.Hour, 0, 0);
+
+                            long startDateLong = long.Parse(kline.KlineOpenTime);
+                            DateTime startDate = DateTimeOffset.FromUnixTimeMilliseconds(startDateLong).UtcDateTime;
+
+                            if (roundedDown == startDate)
+                            {
+                                continue;
+                            }
+
+                            klines.AddRange(await binanceClient.GetKlines(coin, KlineInterval.OneHour, 1000, null, startDate));
+                        }
+
+                        if (klines.Any())
+                        {
+                            await zypryxClient.InsertKlines(klines);
+                        }
+
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Unable to fetch klines for {coin.Ticker}: {ex.ToString()}");
+                    }
+                }
+
+                return true;
             }
             catch (Exception ex) 
             {

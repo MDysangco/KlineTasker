@@ -1,6 +1,8 @@
 ﻿using Cronos;
 using Microsoft.Extensions.Configuration;
 using TrenchLooter.CronTasks;
+using Zyprix.Data.Repositories;
+using Zyprix.Services;
 
 internal class Program
 {
