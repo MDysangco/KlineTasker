@@ -1,91 +1,27 @@
 ﻿using Microsoft.Extensions.Configuration;
-using System.Text;
 using System.Text.Json;
 using Zyprix.Models;
+using Utils;
 
 namespace TrenchLooter
 {
     public class ZypryxClient
     {
         private readonly string apiURL;
-        private readonly string apiKey;
-        private readonly string secretKey;
+        private readonly string _token;
 
-        public ZypryxClient()
+        public ZypryxClient(string token)
         {
-            var config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
+            IConfiguration config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
 
             apiURL = config["ZyprixAPIUrl"] ?? "";
-            apiKey = config["ZyprixAPIKey"] ?? "";
-            secretKey = config["ZyprixSecretKey"] ?? "";
+            _token = token;
         }
 
-        private static readonly JsonSerializerOptions jsonOptions = new()
-        {
-            PropertyNameCaseInsensitive = true
-        };
-
-        private static async Task<string?> MakeRequest(HttpMethod method, string url, bool secure)
-        {
-            using (HttpClient client = new HttpClient())
-            {
-                HttpRequestMessage? request = new HttpRequestMessage(method, url);
-                HttpResponseMessage response = await client.SendAsync(request);
-
-                if (response.IsSuccessStatusCode)
-                {
-                    return await response.Content.ReadAsStringAsync();
-                }
-                else
-                {
-                    Console.WriteLine($"Unable to make request: {response.StatusCode}");
-                }
-                return default;
-            }
-        }
-        private static async Task<string?> MakePost(string url, string jsonBody, bool secure)
-        {
-            using (HttpClient client = new HttpClient())
-            {
-                var content = new StringContent(jsonBody, Encoding.UTF8, "application/json");
-
-                HttpResponseMessage response = await client.PostAsync(url, content);
-
-                if (response.IsSuccessStatusCode)
-                {
-                    return await response.Content.ReadAsStringAsync();
-                }
-
-                Console.WriteLine($"Unable to make POST request: {response.StatusCode}");
-                return default;
-            }
-        }
-
-        private static async Task<T?> MakeRequest<T>(HttpMethod method, string url, bool secure)
-        {
-            string? json = await MakeRequest(method, url, secure);
-
-            if (!string.IsNullOrEmpty(json))
-            {
-                return JsonSerializer.Deserialize<T>(json, jsonOptions);
-            }
-
-            return default;
-        }
-
-        private static async Task<T?> MakePost<T>(string url, object body, bool secure)
-        {
-            string jsonBody = JsonSerializer.Serialize(body);
-
-            string? json = await MakePost(url, jsonBody, secure);
-
-            if (!string.IsNullOrEmpty(json))
-            {
-                return JsonSerializer.Deserialize<T>(json, jsonOptions);
-            }
-
-            return default;
-        }
+        //private static readonly JsonSerializerOptions jsonOptions = new()
+        //{
+        //    PropertyNameCaseInsensitive = true
+        //};
 
 
         #region Coin Endpoints
@@ -95,7 +31,7 @@ namespace TrenchLooter
             try
             {
                 string requestURL = $"{apiURL}/coin";
-                return await MakeRequest<List<Coin>>(HttpMethod.Get, requestURL, false);
+                return await HttpHelper.MakeRequest<List<Coin>>(HttpMethod.Get, requestURL, _token);
             }
             catch (Exception ex)
             {
@@ -109,7 +45,7 @@ namespace TrenchLooter
             try
             {
                 string requestURL = $"{apiURL}/coin/active";
-                return await MakeRequest<List<Coin>>(HttpMethod.Get, requestURL, false);
+                return await HttpHelper.MakeRequest<List<Coin>>(HttpMethod.Get, requestURL, _token);
             }
             catch (Exception ex)
             {
@@ -123,7 +59,7 @@ namespace TrenchLooter
             try
             {
                 string requestURL = $"{apiURL}/coin/{coinId}";
-                return await MakeRequest<Coin>(HttpMethod.Get, requestURL, false);
+                return await HttpHelper.MakeRequest<Coin>(HttpMethod.Get, requestURL, _token);
             }
             catch (Exception ex)
             {
@@ -137,7 +73,8 @@ namespace TrenchLooter
             try
             {
                 string requestURL = $"{apiURL}/coin/update";
-                return await MakePost<bool>(requestURL, coin, false);
+                string jsonContent = JsonSerializer.Serialize(coin);
+                return await HttpHelper.MakePost<bool>(requestURL, jsonContent, _token);
             }
             catch (Exception ex)
             {
@@ -155,7 +92,7 @@ namespace TrenchLooter
             try
             {
                 string requestURL = $"{apiURL}/kline/latest?coinId={coinId}&interval={(int)interval}";
-                return await MakeRequest<Kline>(HttpMethod.Get, requestURL, false);
+                return await HttpHelper.MakeRequest<Kline>(HttpMethod.Get, requestURL, _token);
             }
             catch (Exception ex)
             {
@@ -169,7 +106,7 @@ namespace TrenchLooter
             try
             {
                 string requestURL = $"{apiURL}/kline/earliest?coinId={coinId}&interval={(int)interval}";
-                return await MakeRequest<Kline>(HttpMethod.Get, requestURL, false);
+                return await HttpHelper.MakeRequest<Kline>(HttpMethod.Get, requestURL, _token);
             }
             catch (Exception ex)
             {
@@ -183,7 +120,8 @@ namespace TrenchLooter
             try
             {
                 string requestURL = $"{apiURL}/kline/insert";
-                return await MakePost<bool>(requestURL, klines, false);
+                string jsonContent = JsonSerializer.Serialize(klines);
+                return await HttpHelper.MakePost<bool>(requestURL, jsonContent, _token);
             }
             catch (Exception ex)
             {
@@ -197,7 +135,7 @@ namespace TrenchLooter
             try
             {
                 string requestURL = $"{apiURL}/kline?startDate={startDate}&endDate={endDate}";
-                return await MakeRequest<int>(HttpMethod.Delete, requestURL, false);
+                return await HttpHelper.MakeRequest<int>(HttpMethod.Delete, requestURL, _token);
             }
             catch (Exception ex)
             {

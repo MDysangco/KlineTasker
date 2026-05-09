@@ -9,12 +9,20 @@ namespace TrenchLooter.CronTasks
 {
     public class UpdateCoins
     {
-        public static async Task<bool> Run(CancellationToken cancellationToken)
+        public static async Task<bool> Run(IConfiguration config, CancellationToken cancellationToken)
         {
             try
             {
+                string token = Utils.JwtFactory.CreateInternalServiceToken(config, "tasker", 60);
+
+                if (string.IsNullOrEmpty(token))
+                {
+                    Console.WriteLine("Unable to generate token for internal service.");
+                    return false;
+                }
+
                 BinanceClient binanceClient = new BinanceClient();
-                ZypryxClient zypryxClient = new ZypryxClient();
+                ZypryxClient zypryxClient = new ZypryxClient(token);
 
                 List<Coin>? coins = await zypryxClient.GetActiveCoins();
                 if (coins == null || !coins.Any())
@@ -26,8 +34,7 @@ namespace TrenchLooter.CronTasks
                 coins = coins.Where(coin => !coin.BinanceListingDate.HasValue).ToList();
                 if (coins == null || !coins.Any())
                 {
-                    Console.WriteLine("No coins without Binance listing date found.");
-                    return false;
+                    return true;
                 }
 
                 if(!await binanceClient.CheckConnection())
