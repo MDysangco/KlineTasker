@@ -5,7 +5,6 @@ using System.Text.Json.Nodes;
 using TrenchLooter.Models;
 using Utils;
 using Zyprix.Models;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 using Kline = Zyprix.Models.Kline;
 
 namespace TrenchLooter
@@ -30,7 +29,7 @@ namespace TrenchLooter
             try
             {
                 string requestURL = $"{apiURL}/ping";
-                JsonElement? response = await HttpHelper.MakeRequest<JsonElement>(HttpMethod.Get, requestURL, false);
+                JsonElement? response = await HttpHelper.MakeRequest<JsonElement>(HttpMethod.Get, requestURL, string.Empty);
                 return response != null;
             }
             catch (Exception ex)
@@ -45,7 +44,7 @@ namespace TrenchLooter
             try
             {
                 string requestURL = $"{apiURL}/time";
-                return await HttpHelper.MakeRequest<ServerTime>(HttpMethod.Get, requestURL, false);
+                return await HttpHelper.MakeRequest<ServerTime>(HttpMethod.Get, requestURL, string.Empty);
             }
             catch (Exception ex)
             {
@@ -59,7 +58,7 @@ namespace TrenchLooter
             try
             {
                 string requestURL = $"{apiURL}/ticker/price?symbol={ticker.ToUpper()}";
-                return await HttpHelper.MakeRequest<TickerPrice>(HttpMethod.Get, requestURL, false);
+                return await HttpHelper.MakeRequest<TickerPrice>(HttpMethod.Get, requestURL, string.Empty);
             } 
             catch (Exception ex)
             {
@@ -88,7 +87,7 @@ namespace TrenchLooter
                     requestURL += $"&startTime={startTimeMs}";
                 }
 
-                string jsonString = await HttpHelper.MakeRequest(HttpMethod.Get, requestURL, false);
+                string jsonString = await HttpHelper.MakeRequest(HttpMethod.Get, requestURL, string.Empty);
 
                 if (string.IsNullOrWhiteSpace(jsonString))
                 {

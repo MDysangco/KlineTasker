@@ -14,12 +14,19 @@ namespace TrenchLooter.CronTasks
         /// latest one hour candles.
         /// </summary>
         /// <returns></returns>
-        public static async Task<bool> Run(CancellationToken cancellationToken)
-         {
+        public static async Task<bool> Run(IConfiguration config, CancellationToken cancellationToken)
+        {
             try
             {
+                string token = Utils.JwtFactory.CreateInternalServiceToken(config, "tasker", 60);
+                if (string.IsNullOrEmpty(token))
+                {
+                    Console.WriteLine("Unable to generate token for internal service.");
+                    return false;
+                }
+
                 BinanceClient binanceClient = new BinanceClient();
-                ZypryxClient zypryxClient = new ZypryxClient();
+                ZypryxClient zypryxClient = new ZypryxClient(token);
 
                 List<Coin>? coins = await zypryxClient.GetActiveCoins();
                 if (coins == null || !coins.Any())
@@ -65,6 +72,7 @@ namespace TrenchLooter.CronTasks
                         if (klines.Any())
                         {
                             await zypryxClient.InsertKlines(klines);
+                            await Task.Delay(1000);
                         }
 
                     }

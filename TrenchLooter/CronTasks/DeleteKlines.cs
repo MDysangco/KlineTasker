@@ -13,13 +13,20 @@ namespace TrenchLooter.CronTasks
         /// </summary>
         /// <param name="cancellationToken"></param>
         /// <returns></returns>
-        public static async Task<bool> Run(CancellationToken cancellationToken)
+        public static async Task<bool> Run(IConfiguration config, CancellationToken cancellationToken)
         {
             try
             {
-                ZypryxClient zypryxClient = new ZypryxClient();
+                string token = Utils.JwtFactory.CreateInternalServiceToken(config, "tasker", 60);
+                if (string.IsNullOrEmpty(token))
+                {
+                    Console.WriteLine("Unable to generate token for internal service.");
+                    return false;
+                }
 
-                long startDate = new DateTimeOffset(DateTime.UtcNow).ToUnixTimeMilliseconds();
+                ZypryxClient zypryxClient = new ZypryxClient(token);
+
+                long startDate = 0; // Unix epoch start
                 long endDate = new DateTimeOffset(DateTime.UtcNow.AddYears(-7).AddDays(-2)).ToUnixTimeMilliseconds();
 
                 int rowsDeleted = await zypryxClient.DeleteKlinesByDateRange(startDate, endDate);

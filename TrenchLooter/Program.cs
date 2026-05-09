@@ -20,14 +20,14 @@ internal class Program
 
         CancellationTokenSource cancellationToken = new CancellationTokenSource();
 
-        IEnumerable<Task> tasks = cronJobs.Select(job => RunScheduledJob(job.Key, job.Value, cancellationToken.Token));
+        IEnumerable<Task> tasks = cronJobs.Select(job => RunScheduledJob(job.Key, job.Value, config, cancellationToken.Token));
 
         Console.WriteLine("Cron job started.");
         await Task.WhenAll(tasks);
     }
 
 
-    private static async Task RunScheduledJob(string jobName, string cronExpression, CancellationToken cancellationToken)
+    private static async Task RunScheduledJob(string jobName, string cronExpression, IConfiguration config, CancellationToken cancellationToken)
     {
         CronExpression cron = CronExpression.Parse(cronExpression);
         TimeZoneInfo timeZone = TimeZoneInfo.Utc;
@@ -54,7 +54,7 @@ internal class Program
                 }
                 Console.WriteLine($"{jobName} running at {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} UTC");
 
-                await ExecuteJob(jobName, cancellationToken);
+                await ExecuteJob(jobName, config, cancellationToken);
             }
             catch (Exception ex)
             {
@@ -63,21 +63,21 @@ internal class Program
         }
     }
 
-    private static async Task ExecuteJob(string jobName, CancellationToken cancellationToken)
+    private static async Task ExecuteJob(string jobName, IConfiguration config, CancellationToken cancellationToken)
     {
         switch (jobName)
         {
             case "DeleteKlines":
-                await DeleteKlines.Run(cancellationToken);
+                await DeleteKlines.Run(config, cancellationToken);
                 break;
             case "UpdateKlines":
-                await UpdateKlines.Run(cancellationToken);
+                await UpdateKlines.Run(config, cancellationToken);
                 break;
             case "BackFillKlines":
-                await BackFillKlines.Run(cancellationToken);
+                await BackFillKlines.Run(config, cancellationToken);
                 break;
             case "UpdateCoins":
-                await UpdateCoins.Run(cancellationToken);
+                await UpdateCoins.Run(config, cancellationToken);
                 break;
             default:
                 break;
