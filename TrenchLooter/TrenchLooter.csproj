@@ -13,13 +13,10 @@
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="10.0.6" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="10.0.6" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="10.0.6" />
+    <PackageReference Include="Utils" Version="1.0.14" />
+    <PackageReference Include="Zyprix" Version="1.0.14" />
   </ItemGroup>
 
-	<!-- Utility + Zyprix submodule references remove when using dev -->
-	<ItemGroup>
-		<ProjectReference Include="..\Utility\Utility\Utility.csproj" />
-		<ProjectReference Include="..\Utility\Zyprix\Zyprix.csproj" />
-	</ItemGroup>
 
 	<ItemGroup>
     <None Update="appsettings.json">
