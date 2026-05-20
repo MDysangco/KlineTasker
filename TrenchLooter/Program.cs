@@ -1,11 +1,15 @@
 ﻿using Cronos;
 using Microsoft.Extensions.Configuration;
+using System.Collections.Concurrent;
 using TrenchLooter.CronTasks;
 using Zyprix.Data.Repositories;
 using Zyprix.Services;
 
 internal class Program
 {
+
+	private static readonly ConcurrentDictionary<string, bool> JobLocks = new();
+
 	private static async Task Main(string[] args)
 	{
         IConfiguration? config = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
@@ -52,11 +56,25 @@ internal class Program
                 {
                     await Task.Delay(delay, cancellationToken);
                 }
-                Console.WriteLine($"{jobName} running at {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} UTC");
 
-                await ExecuteJob(jobName, config, cancellationToken);
-            }
-            catch (Exception ex)
+				if (!JobLocks.TryAdd(jobName, true))
+				{
+					Console.WriteLine($"{jobName} skipped (already running)");
+					continue;
+				}
+
+				try
+				{
+					Console.WriteLine($"{jobName} running at {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} UTC");
+					await ExecuteJob(jobName, config, cancellationToken); 
+                    Console.WriteLine($"{jobName} finished at {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} UTC");
+				}
+				finally
+				{
+					JobLocks.TryRemove(jobName, out _);
+				}
+			}
+			catch (Exception ex)
             {
                 Console.WriteLine($"{jobName} failed: {ex.Message}");
             }
