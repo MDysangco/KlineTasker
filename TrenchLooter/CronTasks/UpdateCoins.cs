@@ -43,34 +43,37 @@ namespace TrenchLooter.CronTasks
                     return false;
                 }
 
-                foreach (Coin coin in coins)
-                {
-                    DateTime startingEpoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+				DateTime startingEpoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
-                    List<Kline> klines = await binanceClient.GetKlines(coin, KlineInterval.OneHour, 1, null, startingEpoch);
+				foreach (Coin coin in coins)
+				{
+					try
+					{
+						List<Kline> klines = await binanceClient.GetKlines(coin, KlineInterval.OneHour, 1, null, startingEpoch);
 
-                    if (klines.Any())
+						if (klines.Any())
+						{
+							Kline kline = klines.First();
+
+							if (!long.TryParse(kline.KlineOpenTime, out long klineOpenTime))
+							{
+								continue;
+							}
+
+							coin.BinanceListingDate = klineOpenTime;
+							coin.Active = true;
+
+							await zypryxClient.UpdateCoin(coin);
+						}
+					}
+					catch (Exception ex)
                     {
-                        Kline kline = klines.First();
-
-                        if (long.TryParse(kline.KlineOpenTime, out long klineOpenTime))
-                        {
-
-                            coin.BinanceListingDate = klineOpenTime;
-                            coin.Active = true;
-
-                            bool updated = await zypryxClient.UpdateCoin(coin);
-                            if (updated)
-                            {
-                                return true;
-                            }
-                        }
-                        return false;
-                    }
-                }
+						Console.WriteLine(ex.Message);
+                        continue;
+					}
+				}
 
                 return true;
-
             }
             catch (Exception ex)
             {
