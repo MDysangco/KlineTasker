@@ -55,12 +55,12 @@ namespace TrenchLooter.CronTasks
 						{
 							Kline kline = klines.First();
 
-							if (!long.TryParse(kline.KlineOpenTime, out long klineOpenTime))
-							{
-								continue;
-							}
+                            if(!kline.KlineOpenTime.HasValue)
+                            {
+                                continue;
+                            }
 
-							coin.BinanceListingDate = klineOpenTime;
+							coin.BinanceListingDate = kline.KlineOpenTime.Value;
 							coin.Active = true;
 
 							await zypryxClient.UpdateCoin(coin);

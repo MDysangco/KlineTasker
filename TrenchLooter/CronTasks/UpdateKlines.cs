@@ -45,10 +45,10 @@ namespace TrenchLooter.CronTasks
                 {
                     try
                     {
-                        Kline kline = await zypryxClient.GetLatestKline(coin.Id, KlineInterval.OneHour);
+                        Kline? kline = await zypryxClient.GetLatestKline(coin.Id, KlineInterval.OneHour);
                         List<Kline> klines = new List<Kline>();
 
-                        if (kline == null || string.IsNullOrEmpty(kline?.KlineOpenTime))
+                        if (kline == null || !kline.KlineOpenTime.HasValue)
                         {
                             klines.AddRange(await binanceClient.GetKlines(coin, KlineInterval.OneHour, 1000));
                         }
@@ -58,8 +58,7 @@ namespace TrenchLooter.CronTasks
                             DateTime dt = DateTime.UtcNow;
                             DateTime roundedDown = new DateTime(dt.Year, dt.Month, dt.Day, dt.Hour, 0, 0);
 
-                            long startDateLong = long.Parse(kline.KlineOpenTime);
-                            DateTime startDate = DateTimeOffset.FromUnixTimeMilliseconds(startDateLong).UtcDateTime;
+                            DateTime startDate = DateTimeOffset.FromUnixTimeMilliseconds(kline.KlineOpenTime.Value).UtcDateTime;
 
                             if (roundedDown == startDate)
                             {

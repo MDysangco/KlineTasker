@@ -108,7 +108,7 @@ namespace TrenchLooter
                     {
                         CoinId = coin.Id,
                         Interval = interval,
-                        KlineOpenTime = node[0]?.ToString(),
+                        KlineOpenTime = long.Parse(node[0]!.ToString()),
                         OpenPrice = decimal.Parse(node[1]!.ToString()),
                         HighPrice = decimal.Parse(node[2]!.ToString()),
                         LowPrice = decimal.Parse(node[3]!.ToString()),

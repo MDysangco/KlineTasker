@@ -43,29 +43,26 @@ namespace TrenchLooter.CronTasks
                         if (!coin.BinanceListingDate.HasValue) continue;
 
                         List<Kline> klines = new List<Kline>();
-                        Kline kline = await zypryxClient.GetEarliestKline(coin.Id, KlineInterval.OneHour);
+                        Kline? kline = await zypryxClient.GetEarliestKline(coin.Id, KlineInterval.OneHour);
 
-                        if (kline == null || string.IsNullOrEmpty(kline?.KlineOpenTime))
+                        if (kline == null || !kline.KlineOpenTime.HasValue)
                         {
                             klines.AddRange(await binanceClient.GetKlines(coin, KlineInterval.OneHour, 1000));
                         }
                         else
                         {
-                            if (long.TryParse(kline.KlineOpenTime, out long earliestStored))
+                            DateTime earliestReadingDate = DateTimeOffset.FromUnixTimeMilliseconds(kline.KlineOpenTime.Value).UtcDateTime;
+                            DateTime listingDate = DateTimeOffset.FromUnixTimeMilliseconds(coin.BinanceListingDate.Value).UtcDateTime;
+                            DateTime sevenYearsAgo = DateTime.UtcNow.AddYears(-7).AddDays(-1);
+                            DateTime stopBoundary = (listingDate > sevenYearsAgo) ? listingDate : sevenYearsAgo;
+
+                            if (earliestReadingDate > stopBoundary)
                             {
-                                DateTime earliestReadingDate = DateTimeOffset.FromUnixTimeMilliseconds(earliestStored).UtcDateTime;
-                                DateTime listingDate = DateTimeOffset.FromUnixTimeMilliseconds(coin.BinanceListingDate.Value).UtcDateTime;
-                                DateTime sevenYearsAgo = DateTime.UtcNow.AddYears(-7).AddDays(-1);
-                                DateTime stopBoundary = (listingDate > sevenYearsAgo) ? listingDate : sevenYearsAgo;
+                                List<Kline> klinesAPI = await binanceClient.GetKlines(coin, KlineInterval.OneHour, 1000, earliestReadingDate, null);
 
-                                if (earliestReadingDate > stopBoundary)
+                                if (klinesAPI != null && klinesAPI.Count > 0)
                                 {
-                                    List<Kline> klinesAPI = await binanceClient.GetKlines(coin, KlineInterval.OneHour, 1000, earliestReadingDate, null);
-
-                                    if (klinesAPI != null && klinesAPI.Count > 0)
-                                    {
-                                        klines.AddRange(klinesAPI);
-                                    }
+                                    klines.AddRange(klinesAPI);
                                 }
                             }
                         }
