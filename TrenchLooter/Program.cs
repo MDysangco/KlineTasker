@@ -85,9 +85,6 @@ internal class Program
     {
         switch (jobName)
         {
-            case "DeleteKlines":
-                await DeleteKlines.Run(config, cancellationToken);
-                break;
             case "UpdateKlines":
                 await UpdateKlines.Run(config, cancellationToken);
                 break;
