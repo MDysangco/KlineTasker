@@ -23,6 +23,12 @@ namespace TrenchLooter.CronTasks
                 BinanceClient binanceClient = new BinanceClient();
                 ZypryxClient zypryxClient = new ZypryxClient(token);
 
+                if (await zypryxClient.IsFlushing())
+                {
+                    Console.WriteLine("Zypryx is flushing to the database; skipping this tick and resuming next cycle.");
+                    return true;
+                }
+
                 List<Coin>? coins = await zypryxClient.GetAllCoins();
                 if (coins == null || !coins.Any())
                 {

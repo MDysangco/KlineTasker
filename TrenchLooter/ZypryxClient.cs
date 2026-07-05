@@ -145,5 +145,33 @@ namespace TrenchLooter
         }
 
         #endregion
+
+        #region Health Endpoints
+
+        /// <summary>
+        /// Returns true while the API is flushing its cache to the database. The tasker should skip its
+        /// run during this window and resume on the next tick.
+        /// </summary>s
+        public async Task<bool> IsFlushing()
+        {
+            try
+            {
+                string requestURL = $"{apiURL}/health/flush-status";
+                FlushStatusResponse? status = await HttpHelper.MakeRequest<FlushStatusResponse>(HttpMethod.Get, requestURL, _token);
+                return status?.flushing ?? false;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                return false;
+            }
+        }
+
+        private class FlushStatusResponse
+        {
+            public bool flushing { get; set; }
+        }
+
+        #endregion
     }
 }

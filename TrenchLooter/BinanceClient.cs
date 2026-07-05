@@ -102,8 +102,17 @@ namespace TrenchLooter
 
                 List<Kline> klines = new List<Kline>();
 
+                // Binance includes the currently-open candle in its response, so only keep candles whose close time has already passed.
+                long nowMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+
                 foreach (JsonNode? node in jsonArray)
                 {
+                    long closeTimeMs = long.Parse(node[6]!.ToString());
+                    if (closeTimeMs >= nowMs)
+                    {
+                        continue;
+                    }
+
                     klines.Add(new Kline
                     {
                         CoinId = coin.Id,

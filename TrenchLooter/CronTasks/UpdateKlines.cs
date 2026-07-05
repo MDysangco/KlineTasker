@@ -28,6 +28,12 @@ namespace TrenchLooter.CronTasks
                 BinanceClient binanceClient = new BinanceClient();
                 ZypryxClient zypryxClient = new ZypryxClient(token);
 
+                if (await zypryxClient.IsFlushing())
+                {
+                    Console.WriteLine("Zypryx is flushing to the database; skipping this tick and resuming next cycle.");
+                    return true;
+                }
+
                 List<Coin>? coins = await zypryxClient.GetActiveCoins();
                 if (coins == null || !coins.Any())
                 {
@@ -50,7 +56,7 @@ namespace TrenchLooter.CronTasks
 
                         if (kline == null || !kline.KlineOpenTime.HasValue)
                         {
-                            klines.AddRange(await binanceClient.GetKlines(coin, KlineInterval.OneHour, 1000));
+							klines.AddRange(await binanceClient.GetKlines(coin, KlineInterval.OneHour, 1000));
                         }
                         else
                         {
@@ -60,7 +66,7 @@ namespace TrenchLooter.CronTasks
 
                             DateTime startDate = DateTimeOffset.FromUnixTimeMilliseconds(kline.KlineOpenTime.Value).UtcDateTime;
 
-                            if (roundedDown == startDate)
+                            if (startDate >= roundedDown.AddHours(-1))
                             {
                                 continue;
                             }
